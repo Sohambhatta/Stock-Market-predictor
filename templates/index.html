@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Stock Market Analysis Platform</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-purple: #6b46c1;
+            --secondary-purple: #8b5cf6;
+            --dark-purple: #4c1d95;
+            --accent-purple: #a855f7;
+            --bg-dark: #0f0f23;
+            --bg-secondary: #1a1a3a;
+            --bg-card: #262650;
+            --text-light: #e5e7eb;
+            --text-muted: #9ca3af;
+            --success-green: #10b981;
+            --danger-red: #ef4444;
+            --warning-yellow: #f59e0b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-secondary) 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(38, 38, 80, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--secondary-purple);
+        }
+
+        .search-container {
+            position: relative;
+            flex: 1;
+            max-width: 500px;
+            margin: 0 2rem;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 25px;
+            color: var(--text-light);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            border-color: var(--secondary-purple);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-radius: 10px;
+            margin-top: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-result-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+            transition: background-color 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: var(--secondary-purple);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: 2px solid var(--primary-purple);
+            color: var(--text-light);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background: var(--primary-purple);
+            box-shadow: 0 0 15px rgba(107, 70, 193, 0.5);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem 0;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .market-overview, .trending-stocks, .recommendations {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--secondary-purple);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Stock Cards */
+        .stock-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid var(--secondary-purple);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .stock-card:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(5px);
+        }
+
+        .stock-info h4 {
+            margin-bottom: 0.25rem;
+        }
+
+        .stock-price {
+            text-align: right;
+        }
+
+        .positive { color: var(--success-green); }
+        .negative { color: var(--danger-red); }
+
+        /* Analysis Section */
+        .analysis-container {
+            display: none;
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .stock-title {
+            font-size: 2rem;
+            color: var(--secondary-purple);
+        }
+
+        .current-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .chart-container {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Recommendation Panel */
+        .recommendation-panel {
+            background: linear-gradient(135deg, var(--dark-purple), var(--primary-purple));
+            padding: 2rem;
+            border-radius: 15px;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .recommendation-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .buy { background: var(--success-green); }
+        .sell { background: var(--danger-red); }
+        .hold { background: var(--warning-yellow); color: black; }
+
+        .confidence-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-green), var(--secondary-purple));
+            transition: width 1s ease;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(139, 92, 246, 0.3);
+            border-top: 4px solid var(--secondary-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+            
+            .search-container {
+                margin: 1rem 0;
+            }
+        }
+
+        /* Error States */
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger-red);
+            padding: 1rem;
+            border-radius: 10px;
+            color: var(--danger-red);
+            text-align: center;
+        }
+
+        /* News Panel */
+        .news-panel {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+
+        .news-item {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+            margin-bottom: 1rem;
+        }
+
+        .news-sentiment {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .sentiment-positive { background: var(--success-green); }
+        .sentiment-negative { background: var(--danger-red); }
+        .sentiment-neutral { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i> StockAnalyzer Pro
+                </div>
+                
+                <div class="search-container">
+                    <input type="text" class="search-box" placeholder="Search stocks (e.g., AAPL, Microsoft)" id="searchInput">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+                
+                <nav class="nav-tabs">
+                    <button class="tab-btn active" onclick="switchTab('dashboard')">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('analysis')">
+                        <i class="fas fa-chart-bar"></i> Analysis
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="dashboard-grid fade-in">
+                    <!-- Market Overview -->
+                    <div class="market-overview">
+                        <h3 class="section-title">
+                            <i class="fas fa-globe"></i> Market Overview
+                        </h3>
+                        <div id="marketData">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trending Stocks -->
+                    <div class="trending-stocks">
+                        <h3 class="section-title">
+                            <i class="fas fa-fire"></i> Trending Stocks
+                        </h3>
+                        <div id="trendingData">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Recommendations -->
+                    <div class="recommendations">
+                        <h3 class="section-title">
+                            <i class="fas fa-star"></i> Top Recommendations
+                        </h3>
+                        <div id="recommendationsData">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Tab -->
+            <div id="analysis" class="tab-content">
+                <div class="analysis-container" id="analysisContainer">
+                    <div class="analysis-header">
+                        <div>
+                            <h2 class="stock-title" id="stockTitle">Select a stock to analyze</h2>
+                            <p class="stock-subtitle" id="stockSubtitle">Use the search box above to get started</p>
+                        </div>
+                        <div class="current-price" id="currentPrice"></div>
+                    </div>
+
+                    <!-- Stock Analysis Content -->
+                    <div id="stockAnalysis"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global variables
+        let searchTimeout;
+        let currentStock = null;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setupSearch();
+        });
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Activate button
+            event.target.classList.add('active');
+        }
+
+        // Search functionality
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+                
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    searchStocks(query);
+                }, 300);
+            });
+            
+            // Hide search results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.search-container')) {
+                    searchResults.style.display = 'none';
+                }
+            });
+        }
+
+        // Search for stocks
+        async function searchStocks(query) {
+            const searchResults = document.getElementById('searchResults');
+            
+            try {
+                const response = await fetch(`/api/search/${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    searchResults.innerHTML = data.results.map(result => `
+                        <div class="search-result-item" onclick="selectStock('${result.symbol}', '${result.name}')">
+                            <strong>${result.symbol}</strong> - ${result.name}
+                        </div>
+                    `).join('');
+                    searchResults.style.display = 'block';
+                } else {
+                    searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
+                    searchResults.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                searchResults.innerHTML = '<div class="search-result-item">Search error occurred</div>';
+                searchResults.style.display = 'block';
+            }
+        }
+
+        // Select a stock for analysis
+        function selectStock(symbol, name) {
+            document.getElementById('searchInput').value = `${symbol} - ${name}`;
+            document.getElementById('searchResults').style.display = 'none';
+            
+            currentStock = { symbol, name };
+            
+            // Switch to analysis tab
+            switchTab('analysis');
+            document.querySelector('[onclick="switchTab(\'analysis\')"]').classList.add('active');
+            document.querySelector('[onclick="switchTab(\'dashboard\')"]').classList.remove('active');
+            
+            // Load stock analysis
+            loadStockAnalysis(symbol);
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            await Promise.all([
+                loadMarketOverview(),
+                loadTrendingStocks(),
+                loadRecommendations()
+            ]);
+        }
+
+        // Load market overview
+        async function loadMarketOverview() {
+            try {
+                const response = await fetch('/api/market-overview');
+                const data = await response.json();
+                
+                const container = document.getElementById('marketData');
+                
+                if (data.market_data) {
+                    container.innerHTML = data.market_data.map(item => `
+                        <div class="stock-card slide-in">
+                            <div class="stock-info">
+                                <h4>${item.name}</h4>
+                                <small>${item.symbol}</small>
+                            </div>
+                            <div class="stock-price">
+                                <div>$${item.price.toLocaleString()}</div>
+                                <small class="${item.change >= 0 ? 'positive' : 'negative'}">
+                                    ${item.change >= 0 ? '+' : ''}${item.change} (${item.change_percent.toFixed(2)}%)
+                                </small>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="error-message">Unable to load market data</div>';
+                }
+            } catch (error) {
+                document.getElementById('marketData').innerHTML = '<div class="error-message">Error loading market data</div>';
+            }
+        }
+
+        // Load trending stocks
+        async function loadTrendingStocks() {
+            try {
+                const response = await fetch('/api/trending');
+                const data = await response.json();
+                
+                const container = document.getElementById('trendingData');
+                
+                if (data.trending) {
+                    container.innerHTML = data.trending.map(item => `
+                        <div class="stock-card slide-in" onclick="selectStock('${item.symbol}', '${item.name}')">
+                            <div class="stock-info">
+                                <h4>${item.symbol}</h4>
+                                <small>${item.name}</small>
+                            </div>
+                            <div class="stock-price">
+                                <div>$${item.price}</div>
+                                <small class="${item.change_percent >= 0 ? 'positive' : 'negative'}">
+                                    ${item.change_percent >= 0 ? '+' : ''}${item.change_percent.toFixed(2)}%
+                                </small>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="error-message">Unable to load trending data</div>';
+                }
+            } catch (error) {
+                document.getElementById('trendingData').innerHTML = '<div class="error-message">Error loading trending data</div>';
+            }
+        }
+
+        // Load recommendations
+        async function loadRecommendations() {
+            try {
+                const response = await fetch('/api/recommendations');
+                const data = await response.json();
+                
+                const container = document.getElementById('recommendationsData');
+                
+                if (data.recommendations) {
+                    container.innerHTML = data.recommendations.map(item => `
+                        <div class="stock-card slide-in" onclick="selectStock('${item.symbol}', '${item.company_name}')">
+                            <div class="stock-info">
+                                <h4>${item.symbol}</h4>
+                                <small>${item.company_name}</small>
+                                <div class="recommendation-badge ${item.recommendation.toLowerCase().replace(' ', '-')} ${item.recommendation.toLowerCase()}">
+                                    ${item.recommendation}
+                                </div>
+                            </div>
+                            <div class="stock-price">
+                                <div>$${item.current_price}</div>
+                                <small>${item.confidence}% confidence</small>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="error-message">Unable to load recommendations</div>';
+                }
+            } catch (error) {
+                document.getElementById('recommendationsData').innerHTML = '<div class="error-message">Error loading recommendations</div>';
+            }
+        }
+
+        // Load stock analysis
+        async function loadStockAnalysis(symbol) {
+            const container = document.getElementById('analysisContainer');
+            const stockTitle = document.getElementById('stockTitle');
+            const stockSubtitle = document.getElementById('stockSubtitle');
+            const currentPrice = document.getElementById('currentPrice');
+            const analysisDiv = document.getElementById('stockAnalysis');
+            
+            container.style.display = 'block';
+            stockTitle.textContent = `Analyzing ${symbol}...`;
+            stockSubtitle.textContent = 'Loading comprehensive analysis...';
+            currentPrice.textContent = '';
+            
+            analysisDiv.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            
+            try {
+                const response = await fetch(`/api/analyze/${symbol}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    analysisDiv.innerHTML = `<div class="error-message">${data.error}</div>`;
+                    return;
+                }
+                
+                // Update header
+                stockTitle.textContent = `${data.symbol} - ${data.company_name}`;
+                stockSubtitle.textContent = `${data.sector} | ${data.industry}`;
+                currentPrice.textContent = `$${data.current_price.toFixed(2)}`;
+                
+                // Build analysis content
+                let analysisHTML = `
+                    <!-- Recommendation Panel -->
+                    <div class="recommendation-panel fade-in">
+                        <div class="recommendation-badge ${data.recommendation.recommendation.toLowerCase().replace(' ', '-')}">
+                            ${data.recommendation.recommendation}
+                        </div>
+                        <div>Confidence: ${data.recommendation.confidence}%</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${data.recommendation.confidence}%"></div>
+                        </div>
+                        <div>Target Price: $${data.recommendation.target_price.toFixed(2)}</div>
+                        <div>Stop Loss: $${data.recommendation.stop_loss.toFixed(2)}</div>
+                    </div>
+                `;
+                
+                // Charts
+                if (data.charts && !data.charts.error) {
+                    analysisHTML += `
+                        <div class="charts-grid fade-in">
+                            <div class="chart-container">
+                                <div id="candlestickChart"></div>
+                            </div>
+                            <div class="chart-container">
+                                <div id="rsiChart"></div>
+                            </div>
+                        </div>
+                        <div class="charts-grid fade-in">
+                            <div class="chart-container">
+                                <div id="technicalChart"></div>
+                            </div>
+                            <div class="chart-container">
+                                <div id="volumeChart"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Metrics
+                analysisHTML += `
+                    <div class="metrics-grid fade-in">
+                        <div class="metric-card">
+                            <div class="metric-value">${data.fundamental_metrics.pe_ratio ? data.fundamental_metrics.pe_ratio.toFixed(2) : 'N/A'}</div>
+                            <div class="metric-label">P/E Ratio</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${data.fundamental_metrics.price_to_book ? data.fundamental_metrics.price_to_book.toFixed(2) : 'N/A'}</div>
+                            <div class="metric-label">P/B Ratio</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${data.risk_metrics.beta ? data.risk_metrics.beta.toFixed(2) : 'N/A'}</div>
+                            <div class="metric-label">Beta</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${data.risk_metrics.sharpe_ratio ? data.risk_metrics.sharpe_ratio.toFixed(2) : 'N/A'}</div>
+                            <div class="metric-label">Sharpe Ratio</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${(data.risk_metrics.annual_volatility * 100).toFixed(1)}%</div>
+                            <div class="metric-label">Annual Volatility</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${data.risk_metrics.risk_score}/10</div>
+                            <div class="metric-label">Risk Score</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Technical Signals
+                analysisHTML += `
+                    <div class="news-panel fade-in">
+                        <h3 class="section-title">Technical Signals</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-value">${data.technical_indicators.rsi_signal}</div>
+                                <div class="metric-label">RSI Signal</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">${data.technical_indicators.macd_signal}</div>
+                                <div class="metric-label">MACD Signal</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">${data.technical_indicators.bb_signal}</div>
+                                <div class="metric-label">Bollinger Bands</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">${data.technical_indicators.trend_signal}</div>
+                                <div class="metric-label">Trend</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // News sentiment if available
+                if (data.news_sentiment && !data.news_sentiment.error) {
+                    analysisHTML += `
+                        <div class="news-panel fade-in">
+                            <h3 class="section-title">News Sentiment Analysis</h3>
+                            <p>Recent news sentiment analysis would be displayed here.</p>
+                        </div>
+                    `;
+                }
+                
+                analysisDiv.innerHTML = analysisHTML;
+                
+                // Render charts if available
+                if (data.charts && !data.charts.error) {
+                    setTimeout(() => {
+                        if (data.charts.candlestick) {
+                            Plotly.newPlot('candlestickChart', JSON.parse(data.charts.candlestick));
+                        }
+                        if (data.charts.technical) {
+                            Plotly.newPlot('technicalChart', JSON.parse(data.charts.technical));
+                        }
+                        if (data.charts.volume) {
+                            Plotly.newPlot('volumeChart', JSON.parse(data.charts.volume));
+                        }
+                        if (data.charts.rsi) {
+                            Plotly.newPlot('rsiChart', JSON.parse(data.charts.rsi));
+                        }
+                    }, 100);
+                }
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                analysisDiv.innerHTML = '<div class="error-message">Error loading stock analysis</div>';
+            }
+        }
+
+        // Auto-refresh dashboard data every 5 minutes
+        setInterval(loadDashboardData, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

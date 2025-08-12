@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Stock Analysis Platform</title>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-purple: #6b46c1;
+            --secondary-purple: #8b5cf6;
+            --dark-purple: #4c1d95;
+            --bg-dark: #0f0f23;
+            --bg-secondary: #1a1a3a;
+            --bg-card: #262650;
+            --text-light: #e5e7eb;
+            --text-muted: #9ca3af;
+            --success-green: #10b981;
+            --danger-red: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.4;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 0 15px;
+        }
+
+        /* Mobile-first header */
+        .header {
+            background: var(--bg-secondary);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--primary-purple);
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            text-align: center;
+            background: linear-gradient(45deg, var(--primary-purple), var(--secondary-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Loading indicator */
+        .loading-status {
+            background: var(--bg-card);
+            padding: 0.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            background: var(--bg-secondary);
+            height: 4px;
+            border-radius: 2px;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: var(--primary-purple);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        /* Search section */
+        .search-section {
+            padding: 1rem 0;
+            background: var(--bg-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--primary-purple);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--secondary-purple);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+
+        /* Quick results */
+        .quick-results {
+            display: none;
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--bg-secondary);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-symbol {
+            font-weight: bold;
+            color: var(--primary-purple);
+        }
+
+        .result-name {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .result-price {
+            text-align: right;
+        }
+
+        .price-change {
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .price-change.positive { color: var(--success-green); }
+        .price-change.negative { color: var(--danger-red); }
+
+        /* Main content sections */
+        .section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--bg-secondary);
+            color: var(--primary-purple);
+        }
+
+        /* Stock details */
+        .stock-details {
+            display: none;
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stock-symbol {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .stock-price {
+            text-align: right;
+        }
+
+        .current-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Metrics grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .metric {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-weight: bold;
+            color: var(--text-light);
+        }
+
+        /* Chart placeholder */
+        .chart-container {
+            height: 200px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        /* Market overview */
+        .market-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--bg-secondary);
+        }
+
+        /* Recommendations */
+        .recommendation {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid var(--primary-purple);
+        }
+
+        .rec-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .rec-action {
+            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .rec-action.buy { background: var(--success-green); color: white; }
+        .rec-action.sell { background: var(--danger-red); color: white; }
+        .rec-action.hold { background: var(--text-muted); color: white; }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .container { padding: 0 10px; }
+            .section { padding: 0.75rem; }
+            .metrics-grid { grid-template-columns: 1fr; }
+            .stock-header { flex-direction: column; align-items: flex-start; }
+            .stock-price { text-align: left; margin-top: 0.5rem; }
+        }
+
+        /* Loading animation */
+        .spinner {
+            border: 2px solid var(--bg-secondary);
+            border-top: 2px solid var(--primary-purple);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden { display: none !important; }
+        .show { display: block !important; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>📈 Stock Analysis</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Loading Status -->
+        <div id="loading-status" class="loading-status">
+            <div class="spinner"></div>
+            <span id="loading-text">Loading advanced features...</span>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <input 
+                type="text" 
+                id="search-input" 
+                class="search-input" 
+                placeholder="Search stocks (e.g., AAPL, Tesla)..."
+                autocomplete="off"
+            >
+            <div id="quick-results" class="quick-results"></div>
+        </div>
+
+        <!-- Stock Details -->
+        <div id="stock-details" class="section stock-details">
+            <div class="stock-header">
+                <div>
+                    <div id="stock-symbol" class="stock-symbol">--</div>
+                    <div id="stock-name" class="result-name">Select a stock</div>
+                </div>
+                <div class="stock-price">
+                    <div id="current-price" class="current-price">$0.00</div>
+                    <div id="price-change" class="price-change">--</div>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="metric-label">Volume</div>
+                    <div id="volume" class="metric-value">--</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">52W High</div>
+                    <div id="high-52w" class="metric-value">--</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">52W Low</div>
+                    <div id="low-52w" class="metric-value">--</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Trend</div>
+                    <div id="trend" class="metric-value">--</div>
+                </div>
+            </div>
+
+            <div class="chart-container" id="chart-container">
+                <span style="color: var(--text-muted);">Chart will load here</span>
+            </div>
+        </div>
+
+        <!-- Market Overview -->
+        <div class="section">
+            <div class="section-title">📊 Market Overview</div>
+            <div id="market-overview">
+                <div class="spinner"></div> Loading market data...
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="section">
+            <div class="section-title">🎯 Recommendations</div>
+            <div id="recommendations">
+                <div class="spinner"></div> Loading recommendations...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let loadingStatus = { status: 'not_started', progress: 0 };
+        let searchTimeout;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupSearch();
+            checkLoadingStatus();
+            loadMarketOverview();
+            loadRecommendations();
+        });
+
+        // Setup search functionality
+        function setupSearch() {
+            const searchInput = document.getElementById('search-input');
+            const quickResults = document.getElementById('quick-results');
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+
+                if (query.length < 2) {
+                    quickResults.style.display = 'none';
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => {
+                    searchStocks(query);
+                }, 300);
+            });
+
+            // Hide results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !quickResults.contains(e.target)) {
+                    quickResults.style.display = 'none';
+                }
+            });
+        }
+
+        // Search stocks with quick response
+        async function searchStocks(query) {
+            const quickResults = document.getElementById('quick-results');
+            
+            try {
+                quickResults.innerHTML = '<div style="padding: 1rem; text-align: center;"><div class="spinner"></div> Searching...</div>';
+                quickResults.style.display = 'block';
+
+                const response = await fetch(`/api/quick-search/${encodeURIComponent(query)}`);
+                const results = await response.json();
+
+                if (results.length === 0) {
+                    quickResults.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted);">No results found</div>';
+                    return;
+                }
+
+                quickResults.innerHTML = results.map(stock => `
+                    <div class="result-item" onclick="selectStock('${stock.symbol}')">
+                        <div class="result-info">
+                            <div class="result-symbol">${stock.symbol}</div>
+                            <div class="result-name">${stock.name || stock.symbol}</div>
+                        </div>
+                        <div class="result-price">
+                            <div>$${stock.price}</div>
+                            <div class="price-change ${stock.change_percent >= 0 ? 'positive' : 'negative'}">
+                                ${stock.change_percent >= 0 ? '+' : ''}${stock.change_percent.toFixed(2)}%
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                quickResults.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--danger-red);">Search error</div>';
+            }
+        }
+
+        // Select a stock for detailed analysis
+        async function selectStock(symbol) {
+            document.getElementById('quick-results').style.display = 'none';
+            document.getElementById('search-input').value = symbol;
+            
+            const stockDetails = document.getElementById('stock-details');
+            stockDetails.style.display = 'block';
+            
+            // Show loading state
+            document.getElementById('stock-symbol').textContent = symbol;
+            document.getElementById('stock-name').textContent = 'Loading...';
+            
+            try {
+                // First get basic data (fast)
+                const basicResponse = await fetch(`/api/basic-analyze/${symbol}`);
+                const basicData = await basicResponse.json();
+                
+                if (basicData.error) {
+                    showError(basicData.error);
+                    return;
+                }
+                
+                updateStockDisplay(basicData);
+                
+                // Then try advanced data if available
+                if (loadingStatus.status === 'ready') {
+                    try {
+                        const advancedResponse = await fetch(`/api/advanced-analyze/${symbol}`);
+                        const advancedData = await advancedResponse.json();
+                        
+                        if (!advancedData.error) {
+                            updateAdvancedDisplay(advancedData);
+                        }
+                    } catch (e) {
+                        console.log('Advanced analysis not available yet');
+                    }
+                }
+                
+            } catch (error) {
+                showError('Failed to load stock data');
+            }
+        }
+
+        // Update basic stock display
+        function updateStockDisplay(data) {
+            document.getElementById('stock-symbol').textContent = data.symbol;
+            document.getElementById('stock-name').textContent = data.name || data.symbol;
+            document.getElementById('current-price').textContent = `$${data.price}`;
+            
+            const changeEl = document.getElementById('price-change');
+            changeEl.textContent = `${data.change >= 0 ? '+' : ''}$${data.change} (${data.change_percent >= 0 ? '+' : ''}${data.change_percent.toFixed(2)}%)`;
+            changeEl.className = `price-change ${data.change_percent >= 0 ? 'positive' : 'negative'}`;
+            
+            // Update metrics
+            document.getElementById('volume').textContent = formatNumber(data.volume);
+            document.getElementById('high-52w').textContent = data.high_52w ? `$${data.high_52w}` : '--';
+            document.getElementById('low-52w').textContent = data.low_52w ? `$${data.low_52w}` : '--';
+            document.getElementById('trend').textContent = data.trend || '--';
+        }
+
+        // Update with advanced analysis
+        function updateAdvancedDisplay(data) {
+            // Add more detailed metrics here when advanced analysis is ready
+            console.log('Advanced data:', data);
+        }
+
+        // Check loading status
+        async function checkLoadingStatus() {
+            try {
+                const response = await fetch('/api/status');
+                loadingStatus = await response.json();
+                
+                const loadingDiv = document.getElementById('loading-status');
+                const progressFill = document.getElementById('progress-fill');
+                const loadingText = document.getElementById('loading-text');
+                
+                progressFill.style.width = loadingStatus.progress + '%';
+                
+                if (loadingStatus.status === 'ready') {
+                    loadingText.textContent = '✅ All features ready!';
+                    setTimeout(() => {
+                        loadingDiv.style.display = 'none';
+                    }, 2000);
+                } else if (loadingStatus.status === 'error') {
+                    loadingText.textContent = '❌ Some features may be limited';
+                } else {
+                    loadingText.textContent = 'Loading advanced features...';
+                    setTimeout(checkLoadingStatus, 1000);
+                }
+                
+            } catch (error) {
+                console.log('Status check failed, retrying...');
+                setTimeout(checkLoadingStatus, 2000);
+            }
+        }
+
+        // Load market overview
+        async function loadMarketOverview() {
+            const marketDiv = document.getElementById('market-overview');
+            
+            try {
+                const response = await fetch('/api/market-overview');
+                const data = await response.json();
+                
+                marketDiv.innerHTML = data.market_data.map(stock => `
+                    <div class="market-item" onclick="selectStock('${stock.symbol}')">
+                        <div>
+                            <div class="result-symbol">${stock.symbol}</div>
+                            <div class="result-name">${stock.name || stock.symbol}</div>
+                        </div>
+                        <div class="result-price">
+                            <div>$${stock.price}</div>
+                            <div class="price-change ${stock.change_percent >= 0 ? 'positive' : 'negative'}">
+                                ${stock.change_percent >= 0 ? '+' : ''}${stock.change_percent.toFixed(2)}%
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                marketDiv.innerHTML = '<div style="color: var(--text-muted); text-align: center;">Market data unavailable</div>';
+            }
+        }
+
+        // Load recommendations
+        async function loadRecommendations() {
+            const recDiv = document.getElementById('recommendations');
+            
+            try {
+                const response = await fetch('/api/recommendations');
+                const recommendations = await response.json();
+                
+                if (recommendations.error) {
+                    recDiv.innerHTML = '<div style="color: var(--text-muted); text-align: center;">Recommendations unavailable</div>';
+                    return;
+                }
+                
+                recDiv.innerHTML = recommendations.map(rec => `
+                    <div class="recommendation" onclick="selectStock('${rec.symbol}')">
+                        <div class="rec-header">
+                            <div class="result-symbol">${rec.symbol}</div>
+                            <div class="rec-action ${rec.action.toLowerCase()}">${rec.action}</div>
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text-muted);">${rec.reason}</div>
+                        <div style="font-size: 0.8rem; margin-top: 0.5rem;">
+                            Confidence: ${Math.round(rec.confidence * 100)}%
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                recDiv.innerHTML = '<div style="color: var(--text-muted); text-align: center;">Recommendations unavailable</div>';
+            }
+        }
+
+        // Utility functions
+        function formatNumber(num) {
+            if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function showError(message) {
+            alert('Error: ' + message);
+        }
+
+        // Refresh data every 30 seconds
+        setInterval(() => {
+            loadMarketOverview();
+            if (loadingStatus.status === 'ready') {
+                loadRecommendations();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
